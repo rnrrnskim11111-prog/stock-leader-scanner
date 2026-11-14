@@ -1,159 +1,19 @@
-
-<!DOCTYPE html>
+<!doctype html>
 <html lang="ko">
 <head>
-<meta charset="UTF-8">
+<meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>나의 주도주 검색기</title>
 <style>
-*{box-sizing:border-box}
-body{margin:0;padding:18px;background:#101827;color:#f1f5f9;
-font-family:Arial,sans-serif}
-h1{font-size:25px;margin-bottom:8px}
-p,small{color:#a8b6ca;line-height:1.5}
-.panel,.item{background:#1e293b;border-radius:15px;
-padding:16px;margin:14px 0}
-label{display:block;margin:13px 0 5px;font-size:14px}
-input,textarea{width:100%;padding:12px;font-size:16px;
-border-radius:9px;border:1px solid #475569;
-background:#0f172a;color:white}
-button{width:100%;padding:14px;border:0;border-radius:9px;
-background:#38bdf8;color:#071522;font-weight:bold;
-font-size:16px;margin-top:12px}
-button:disabled{opacity:.55}
-.secondary{background:#334155;color:white}
-.num{line-height:1.9;font-size:14px}
-.warn{color:#facc15}
-.good{color:#4ade80}
-.error{color:#fca5a5;white-space:pre-wrap}
-#status{padding:12px;white-space:pre-wrap}
+body{margin:0;background:#101827;color:#eef4ff;font:16px system-ui;line-height:1.55}
+main{max-width:32rem;margin:8vh auto;padding:1.5rem}
+h1{font-size:1.7rem}p{color:#c3d1e5}
+a{display:block;border-radius:.65rem;padding:.8rem 1rem;text-align:center;background:#7dd3fc;color:#0c2036;font-weight:700;text-decoration:none}
 </style>
 </head>
-<body>
-<h1>📈 나의 주도주 검색기</h1>
-<p>한국투자증권 · 실제 시세 조회용</p>
-<div class="panel">
-<strong>🔐 개인 인증</strong>
-<label>Cloudflare 접근 보안키</label>
-<input type="password" id="key" autocomplete="off"
-placeholder="SCANNER_ACCESS_KEY 값 입력">
-<small>이 값은 GitHub 코드나 브라우저 저장소에 저장하지 않습니다.</small>
-<label>관심종목 코드 (쉼표로 구분, 최대 8개)</label>
-<textarea id="codes" rows="3">005930,000660,058610,005380,035420</textarea>
-<button onclick="run(true)">삼성전자 1종목 연결 테스트</button>
-</div>
-<div class="panel">
-<strong>🔍 주도주 검색 조건</strong>
-<label>최소 시가총액 (억원)</label>
-<input type="number" id="cap" value="5000">
-<label>최소 거래대금 (억원)</label>
-<input type="number" id="money" value="500">
-<label>최소 거래량 배수</label>
-<input type="number" id="ratio" value="2" step=".1">
-<label><input id="exclude" type="checkbox" checked
-style="width:auto"> 삼성전자·SK하이닉스 제외</label>
-<button onclick="run(false)">관심종목 실제 검색</button>
-<button class="secondary" onclick="reset()">조건 초기화</button>
-</div>
-<div id="status">조회 준비 완료</div>
-<h2 id="title">검색 결과</h2>
-<div id="results"></div>
-<small>주의: 최근 20거래일 하루 평균 거래량과
-오늘 누적 거래량을 비교합니다. 장중 동일 시간대 비교가 아니며,
-이 화면은 WebSocket 실시간 스트리밍이 아닙니다.
-매수·매도 신호로 사용하지 마세요.</small>
-<script>
-const API = "https://stock-leader-api.rnrrnskim11111.workers.dev";
-
-function fmt(x,d=0){
-return Number.isFinite(Number(x)) ?
-Number(x).toLocaleString("ko-KR",{maximumFractionDigits:d}) : "-";
-}
-function reset(){
-document.getElementById("cap").value=5000;
-document.getElementById("money").value=500;
-document.getElementById("ratio").value=2;
-document.getElementById("exclude").checked=true;
-}
-async function run(test){
-const key=document.getElementById("key").value.trim();
-const status=document.getElementById("status");
-const results=document.getElementById("results");
-const title=document.getElementById("title");
-
-if(!key){status.textContent="보안키를 먼저 입력하세요.";return;}
-
-const codes=test?["005930"]:
-[...new Set(document.getElementById("codes").value
-.split(/[,\s]+/).map(s=>s.trim()).filter(Boolean))];
-
-if(codes.length<1||codes.length>8||
-codes.some(s=>!/^\d{6}$/.test(s))){
-status.textContent="6자리 종목코드를 1~8개 입력하세요.";
-return;
-}
-const cap=Number(document.getElementById("cap").value);
-const money=Number(document.getElementById("money").value);
-const ratio=Number(document.getElementById("ratio").value);
-const exclude=document.getElementById("exclude").checked;
-const found=[];
-const errors=[];
-results.innerHTML="";
-title.textContent="검색 결과";
-
-for(let i=0;i<codes.length;i++){
-const code=codes[i];
-status.textContent=`실제 시세 조회 중 (${i+1}/${codes.length}) : ${code}`;
-try{
-const r=await fetch(API+"/quote?code="+code,{
-method:"GET",
-headers:{"X-Scanner-Key":key},
-cache:"no-store"
-});
-const data=await r.json();
-if(!r.ok) throw Error(data.detail||data.error||"HTTP "+r.status);
-found.push(data);
-}catch(e){
-errors.push(code+": "+e.message);
-}
-if(i<codes.length-1) await new Promise(r=>setTimeout(r,600));
-}
-const filtered=test?found:found.filter(x=>
-(!exclude||!["005930","000660"].includes(x.code)) &&
-x.marketCapEok>=cap &&
-x.tradingValueEok>=money &&
-x.volumeRatio!==null &&
-x.volumeRatio>=ratio
-);
-filtered.sort((a,b)=>b.tradingValueEok-a.tradingValueEok);
-title.textContent=`검색 결과 ${filtered.length}종목`;
-status.textContent=`조회 완료: ${found.length}종목`+
-(errors.length?"\n오류:\n"+errors.join("\n"):"");
-
-if(!filtered.length){
-results.innerHTML='<div class="panel">조건을 만족하는 종목이 없습니다. 한 종목 연결 테스트 또는 조건 완화를 시도하세요.</div>';
-return;
-}
-for(const x of filtered){
-const el=document.createElement("div");
-el.className="item";
-const name=document.createElement("h3");
-name.textContent=(x.name||x.code)+" ("+x.code+")";
-const detail=document.createElement("div");
-detail.className="num";
-detail.textContent=
-"현재가: "+fmt(x.price)+"원\n"+
-"등락률: "+fmt(x.changeRate,2)+"%\n"+
-"시가총액: "+fmt(x.marketCapEok)+"억원\n"+
-"거래대금: "+fmt(x.tradingValueEok,1)+"억원\n"+
-"누적 거래량: "+fmt(x.volume)+"주\n"+
-"20일 대비 배수: "+(x.volumeRatio===null?"자료 없음":fmt(x.volumeRatio,2)+"배")+
-(x.historyWarning?"\n"+x.historyWarning:"");
-detail.style.whiteSpace="pre-line";
-el.append(name,detail);
-results.append(el);
-}
-}
-</script>
-</body>
+<body><main>
+<h1>나의 주도주 검색기</h1>
+<p>관심종목 검색과 삼성전자 연결 테스트는 검색기에서 로그인한 뒤 이용할 수 있습니다.</p>
+<a href="https://stock-leader-api.rnrrnskim11111.workers.dev/">검색기 열기</a>
+</main></body>
 </html>
