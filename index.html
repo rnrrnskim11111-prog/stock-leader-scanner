@@ -1,47 +1,5 @@
 <!DOCTYPE html>
-<html lang="ko">
-<head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width,initial-scale=1">
-<title>주도주 검색기</title>
-<style>
-*{box-sizing:border-box}body{margin:0;background:#101827;color:#f1f5f9;font-family:Arial,sans-serif;padding:18px}.head{font-size:24px;font-weight:bold}p{color:#a8b6ca;font-size:13px}.panel{background:#1e293b;border-radius:16px;padding:16px;margin:16px 0}label{display:block;font-size:13px;margin:12px 0 5px}input{width:100%;padding:12px;border-radius:8px;background:#0f172a;color:white;border:1px solid #475569;font-size:16px}button{background:#38bdf8;color:#071522;padding:13px;border:0;border-radius:9px;font-weight:bold;width:100%;margin-top:16px}button.secondary{background:#334155;color:white}.tag{color:#facc15;font-size:12px}.item{background:#1e293b;border-radius:12px;margin:10px 0;padding:14px}.name{font-weight:bold;font-size:17px}.num{font-size:13px;color:#cbd5e1;margin-top:8px;line-height:1.8}.empty{padding:25px;text-align:center;color:#94a3b8}.small{font-size:12px;color:#94a3b8}
-</style>
-</head>
-<body>
-<div class="head">📈 나의 주도주 검색기</div>
-<p>거래량과 거래대금으로 주도주 후보 찾기</p>
-<div class="panel">
-<div class="tag">⚠ 현재 예시 데이터 · 실시간 시세 미연결</div>
-<label>최소 시가총액 (억원)</label>
-<input id="cap" type="number" value="5000">
-<label>최소 거래대금 (억원)</label>
-<input id="value" type="number" value="500">
-<label>20일 평균 대비 거래량 배수</label>
-<input id="volume" type="number" step="0.1" value="2">
-<label><input type="checkbox" id="exclude" checked style="width:auto"> 삼성전자·SK하이닉스 제외</label>
-<button onclick="scan()">🔍 주도주 후보 검색</button>
-<button class="secondary" onclick="resetFilters()">검색 조건 초기화</button>
-</div>
-<h3 id="count">검색 결과</h3>
-<div id="results"></div>
-<p class="small">※ 아래 종목과 숫자는 기능 확인용 가상 예시입니다. 실제 주가, 매매 신호 또는 투자 권유가 아닙니다.</p>
-<script>
-const data=[
-{name:"가상 로봇 A",cap:12000,value:1200,volume:3.4},
-{name:"가상 반도체 B",cap:22000,value:2100,volume:2.8},
-{name:"가상 전력 C",cap:9000,value:700,volume:2.3},
-{name:"가상 바이오 D",cap:3800,value:900,volume:4.1},
-{name:"가상 소재 E",cap:13000,value:350,volume:1.7},
-{name:"삼성전자",cap:4000000,value:8500,volume:2.5},
-{name:"SK하이닉스",cap:1400000,value:5900,volume:2.9}
-];
-function scan(){
-const cap=Number(document.getElementById("cap").value);
-const val=Number(document.getElementById("value").value);
-const vol=Number(document.getElementById("volume").value);
-const ex=document.getElementById("exclude").checked;
-const filtered=data.filter(x=>x.cap>=cap&&x.value>=val&&x.volume>=vol&&(!ex||!["삼성전자","SK하이닉스"].includes(x.name))).sort((a,b)=>b.value-a.value);
+<);
 document.getElementById("count").textContent="검색 결과: "+filtered.length+"종목";
 document.getElementById("results").innerHTML=filtered.length?filtered.map((x,i)=>'<div class="item"><div class="name">'+(i+1)+'. '+x.name+'</div><div class="num">시가총액 '+x.cap.toLocaleString()+'억원<br>거래대금 '+x.value.toLocaleString()+'억원<br>거래량 증가 '+x.volume+'배</div></div>').join(""):'<div class="empty">조건을 만족하는 예시 종목이 없습니다.</div>';
 }
